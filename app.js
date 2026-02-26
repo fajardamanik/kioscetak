@@ -2,6 +2,16 @@ const SUPABASE_URL = "https://fyfmeeaifqvmqnbbmnvm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Zm1lZWFpZnF2bXFuYmJtbnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MjE2NjQsImV4cCI6MjA4NzM5NzY2NH0.jV2Fjs2Sh6lU_pFvArdgDpYA_GSL-7FWmonksMcIhnY";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// --- CONFIGURATION ---
+// Jika anda menggunakan GitHub Pages, ganti URL di bawah dengan URL HTTPS (misal dari ngrok)
+const EXTERNAL_BACKEND_URL = "";
+
+const BACKEND_URL = EXTERNAL_BACKEND_URL || (
+    (window.location.hostname && !['localhost', '127.0.0.1', 'fajardamanik.github.io'].includes(window.location.hostname))
+        ? `http://${window.location.hostname}:5000`
+        : 'http://localhost:5000'
+);
+
 let temporaryContact = "";
 let itemsRendered = false;
 let wasLocked = false;
@@ -126,7 +136,7 @@ async function handleFiles(files) {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch('http://localhost:5000/analyze', {
+            const res = await fetch(`${BACKEND_URL}/analyze`, {
                 method: 'POST',
                 body: formData
             });
@@ -494,7 +504,7 @@ async function bukaMidtrans() {
     const jobId = new URLSearchParams(window.location.search).get('jobId');
     const totalHarga = parseInt(document.getElementById('display-total-price').innerText.replace(/\D/g, ''));
 
-    const response = await fetch('http://localhost:5000/create-payment', {
+    const response = await fetch(`${BACKEND_URL}/create-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId, amount: totalHarga, customer_contact: temporaryContact })
