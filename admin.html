@@ -179,7 +179,10 @@
 
                 const response = await fetch(`${BACKEND_URL}/send-wa`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Bypass-Tunnel-Reminder': 'true'
+                    },
                     body: JSON.stringify({
                         orderId,
                         target: job.contact,
@@ -316,7 +319,10 @@
 
                     await fetch(`${BACKEND_URL}/send-wa`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Bypass-Tunnel-Reminder': 'true'
+                        },
                         body: JSON.stringify({ orderId: id, target: contact, status, items, packagingName })
                     });
                 } catch (waErr) {

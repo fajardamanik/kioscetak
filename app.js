@@ -138,6 +138,7 @@ async function handleFiles(files) {
 
             const res = await fetch(`${BACKEND_URL}/analyze`, {
                 method: 'POST',
+                headers: { 'Bypass-Tunnel-Reminder': 'true' },
                 body: formData
             });
             const data = await res.json();
@@ -506,7 +507,10 @@ async function bukaMidtrans() {
 
     const response = await fetch(`${BACKEND_URL}/create-payment`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'true'
+        },
         body: JSON.stringify({ jobId, amount: totalHarga, customer_contact: temporaryContact })
     });
     const data = await response.json();
