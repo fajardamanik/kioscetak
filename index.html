@@ -7,6 +7,8 @@
     <title>KioskPrint - Cetak Cepat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -51,7 +53,7 @@
                 </div>
             </div>
 
-            <table class="w-full text-sm text-left mb-6">
+            <table class="w-full text-sm text-left mb-4">
                 <thead class="text-gray-400 uppercase text-[10px] border-b">
                     <tr>
                         <th class="py-2">Nama File</th>
@@ -61,13 +63,27 @@
                 </thead>
                 <tbody id="file-list-body">
                 </tbody>
-                <tfoot class="border-t-2">
-                    <tr class="font-bold text-lg text-blue-600">
-                        <td colspan="2" class="py-4 text-gray-800">TOTAL ESTIMASI</td>
-                        <td class="py-4 text-right" id="display-total-price">Rp 0</td>
-                    </tr>
-                </tfoot>
             </table>
+
+            <!-- Pilihan Kemasan -->
+            <div id="packaging-section" class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <label for="packaging-select"
+                    class="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Pilihan Kemasan
+                    (Opsional)</label>
+                <select id="packaging-select"
+                    class="w-full p-3 border rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white">
+                    <option value="">Nanti Saja</option>
+                </select>
+                <p class="text-[9px] text-gray-400 mt-2 italic">* Folder membantu merapikan dokumen Anda.</p>
+            </div>
+
+            <!-- Total Estimasi -->
+            <div id="total-container" class="hidden">
+                <div class="border-t-2 py-4 flex justify-between items-center font-bold text-lg text-blue-600 mb-6">
+                    <span class="text-gray-800">TOTAL ESTIMASI</span>
+                    <span id="display-total-price">Rp 0</span>
+                </div>
+            </div>
 
             <div id="calc-container" class="hidden mt-6 text-center border-t pt-4">
                 <button onclick="hitungBiaya()"
@@ -84,10 +100,43 @@
                         class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                 </div>
                 <div id="midtrans-container" class="hidden">
+                    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+                        <span class="text-lg">⚠️</span>
+                        <p class="text-[10px] text-amber-800 leading-tight">
+                            <strong>PENTING:</strong> Mohon jangan tutup atau refresh halaman ini saat melakukan
+                            pembayaran. File Anda akan dikirim otomatis ke mesin cetak segera setelah pembayaran lunas.
+                        </p>
+                    </div>
                     <button onclick="bukaMidtrans()"
                         class="w-full bg-[#132144] text-white py-4 rounded-xl font-bold shadow-xl">🚀 BAYAR
                         SEKARANG</button>
                 </div>
+            </div>
+
+            <!-- Success Confirmation -->
+            <div id="success-container"
+                class="hidden mt-8 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full text-4xl mb-2">
+                    ✅
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Antrean Cetak Berhasil!</h3>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Pesan konfirmasi telah dikirim ke nomor WhatsApp:<br>
+                        <span id="display-contact" class="font-bold text-blue-600 text-lg"></span>
+                    </p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <p class="text-[11px] text-gray-500 leading-relaxed">
+                        Silakan cek HP Anda. Anda sudah boleh menutup halaman ini, atau klik tombol di bawah jika masih
+                        ada file lain yang ingin dicetak.
+                    </p>
+                </div>
+                <button onclick="resetPage()"
+                    class="w-full border-2 border-blue-600 text-blue-600 py-4 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-95">
+                    ➕ CETAK FILE LAINNYA
+                </button>
             </div>
         </div>
     </div>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - KioskPrint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-black text-gray-800">⚙️ CONTROL PANEL</h1>
+            <div id="server-status" class="text-[10px] bg-green-500 text-white px-2 py-1 rounded shadow-sm">SERVER LIVE
+            </div>
+        </div>
+
+        <div
+            class="bg-white p-6 rounded-xl shadow-sm border grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+            <div><label for="set-paper" class="text-[10px] font-bold">KERTAS (Rp)</label><input type="number"
+                    id="set-paper" class="w-full border p-2 rounded text-sm"></div>
+            <div><label for="set-black" class="text-[10px] font-bold">TINTA HITAM (Rp)</label><input type="number"
+                    id="set-black" class="w-full border p-2 rounded text-sm"></div>
+            <div><label for="set-color" class="text-[10px] font-bold">TINTA WARNA (Rp)</label><input type="number"
+                    id="set-color" class="w-full border p-2 rounded text-sm"></div>
+            <div><label for="set-cleanup" class="text-[10px] font-bold">HAPUS FILE (Jam)</label><input type="number"
+                    id="set-cleanup" class="w-full border p-2 rounded text-sm"></div>
+            <button onclick="saveSettings()"
+                class="bg-blue-600 text-white font-bold py-2 rounded shadow-md hover:bg-blue-700">SIMPAN</button>
+        </div>
+
+        <div class="flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl shadow-sm border">
+            <div class="flex items-center gap-2">
+                <label class="text-[10px] font-black text-gray-400 uppercase">Filter Status:</label>
+                <select id="filter-status" onchange="loadJobs()"
+                    class="text-xs border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="all">SEMUA STATUS</option>
+                    <option value="pending">MENUNGGU BAYAR</option>
+                    <option value="paid">SUDAH BAYAR</option>
+                    <option value="ready">SIAP AMBIL</option>
+                    <option value="picked_up">SELESAI</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-[10px] font-black text-gray-400 uppercase">Urutan:</label>
+                <select id="sort-order" onchange="loadJobs()"
+                    class="text-xs border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="desc">TERBARU ⬇</option>
+                    <option value="asc">TERLAMA ⬆</option>
+                </select>
+            </div>
+            <div class="ml-auto text-[10px] text-gray-400 font-bold uppercase tracking-widest" id="job-count">0 JOBS
+                FOUND</div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md border overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b text-[10px] uppercase font-black text-gray-500">
+                    <tr>
+                        <th class="p-4 w-36">Waktu & Job ID</th>
+                        <th class="p-4 w-36">Kontak & Notif</th>
+                        <th class="p-4">Rincian File</th>
+                        <th class="p-4 text-right w-28">Total Harga</th>
+                        <th class="p-4 text-center w-36">Status & Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="job-list" class="divide-y text-sm"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://fyfmeeaifqvmqnbbmnvm.supabase.co";
+        // CRITICAL: NEVER include service_role key in client-side HTML.
+        // Use the ANON key here. For sensitive operations, move them to the backend.
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Zm1lZWFpZnF2bXFuYmJtbnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MjE2NjQsImV4cCI6MjA4NzM5NzY2NH0.jV2Fjs2Sh6lU_pFvArdgDpYA_GSL-7FWmonksMcIhnY";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentJobs = [];
+
+        async function loadJobs() {
+            const filterValue = document.getElementById('filter-status').value;
+            const sortOrder = document.getElementById('sort-order').value;
+
+            // Removed products join as it's now handled via print_job_items
+            let query = supabaseClient.from('print_jobs').select('*, print_job_items(*)');
+
+            if (filterValue !== 'all') {
+                query = query.eq('status', filterValue);
+            }
+            query = query.order('created_at', { ascending: (sortOrder === 'asc') });
+
+            const { data: jobs, error } = await query;
+            console.log("DEBUG: Admin Jobs Query Result:", jobs);
+            if (error) {
+                console.error("Query Error:", error);
+                document.getElementById('job-list').innerHTML = `<tr><td colspan="5" class="p-10 text-center text-red-500 font-bold">Error loading jobs: ${error.message}</td></tr>`;
+                return;
+            }
+
+            currentJobs = jobs || [];
+            document.getElementById('job-count').innerText = `${currentJobs.length} JOBS FOUND`;
+
+            const list = document.getElementById('job-list');
+            if (currentJobs.length === 0) {
+                list.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-gray-400">Belum ada pesanan masuk.</td></tr>`;
+                return;
+            }
+
+            list.innerHTML = currentJobs.map(j => {
+                try {
+                    const date = j.created_at ? new Date(j.created_at).toLocaleString('id-ID') : 'N/A';
+                    const isNotified = j.contact;
+                    const hasContact = isNotified;
+
+
+                    return `
+                        <tr class="border-b odd:bg-white even:bg-slate-200/50 hover:bg-blue-50/30 transition-colors">
+                            <td class="p-4 align-top">
+                                <div class="text-[10px] font-mono text-gray-400 mb-1">#${(j.id || 'N/A').substring(0, 8).toUpperCase()}</div>
+                                <div class="text-[11px] font-bold text-gray-700">${date}</div>
+                            </td>
+                            <td class="p-4 align-top">
+                                <div class="flex flex-col gap-2">
+                                    <div class="font-mono text-[10px] font-bold text-gray-800 break-all bg-gray-50 p-1.5 rounded border leading-relaxed">
+                                        ${j.contact || '<span class="text-gray-400 italic font-normal">No Contact</span>'}
+                                    </div>
+                                    ${isNotified
+                            ? '<span class="text-[9px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold">✓ WA SENT</span>'
+                            : '<span class="text-[9px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full font-bold">○ WA PENDING</span>'}
+                                    ${hasContact ? `<button id="resend-${j.id}" onclick='resendWA("${j.id}")' class="text-[8px] mt-1 text-blue-600 hover:text-blue-800 font-bold bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 transition-all">🔄 RESEND WA</button>` : ''}
+                                </div>
+                            </td>
+                            <td class="p-4 align-top">
+                                ${renderFiles(j.print_job_items || [], j.status)}
+                            </td>
+                            <td class="p-4 text-right font-black align-top">Rp ${(j.total_price || 0).toLocaleString()}</td>
+                            <td class="p-3 text-center align-top">
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${getStatusStyle(j.status, j.total_price)}">
+                                        ${getStatusLabel(j.status, j.total_price)}
+                                    </span>
+                                    ${renderActionBtn(j.id, j.status)}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } catch (e) {
+                    console.error("Err render row:", e);
+                    return `<tr><td colspan="5" class="p-4 text-red-500 font-mono text-[10px]">Error rendering job row</td></tr>`;
+                }
+            }).join('');
+        }
+
+        async function resendWA(orderId) {
+            const job = currentJobs.find(j => j.id === orderId);
+            if (!job) return;
+
+            const btn = document.getElementById(`resend-${orderId}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "⏳ SENDING...";
+            }
+            try {
+                const pkgItem = job.print_job_items?.find(it => !it.md5_hash);
+                const packagingName = pkgItem ? pkgItem.file_name : null;
+
+                const response = await fetch('http://localhost:5000/send-wa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId,
+                        target: job.contact,
+                        status: job.status,
+                        items: job.print_job_items || [],
+                        packagingName
+                    })
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    if (btn) {
+                        btn.innerText = "✅ SENT";
+                        btn.className = "text-[8px] mt-1 text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full border border-green-200";
+                    }
+                    setTimeout(() => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerText = "🔄 RESEND WA";
+                            btn.className = "text-[8px] mt-1 text-blue-600 hover:text-blue-800 font-bold bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 transition-all";
+                        }
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || "Failed to send WA");
+                }
+            } catch (err) {
+                console.error("Resend WA Error:", err);
+                alert("Gagal kirim WA: " + err.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "🔄 RESEND WA";
+                }
+            }
+        }
+
+        function getStatusLabel(s, price) {
+            if (s === 'pending' && price === 0) return "MENGHITUNG";
+            if (s === 'pending') return "MENUNGGU BAYAR";
+            if (s === 'paid') return "SEDANG UPLOAD";
+            if (s === 'confirmed') return "SIAP CETAK";
+            if (s === 'ready') return "SIAP AMBIL";
+            if (s === 'picked_up') return "SELESAI";
+            return s.toUpperCase();
+        }
+
+        function getStatusStyle(s, price) {
+            if (s === 'pending' && price === 0) return 'bg-blue-100 text-blue-700 animate-pulse';
+            if (s === 'pending') return 'bg-yellow-100 text-yellow-700';
+            if (s === 'paid') return 'bg-orange-100 text-orange-700 animate-pulse';
+            if (s === 'confirmed') return 'bg-green-100 text-green-700';
+            if (s === 'ready') return 'bg-indigo-100 text-indigo-700';
+            return 'bg-gray-100 text-gray-500';
+        }
+
+        function renderFiles(items, jobStatus) {
+            if (!items || items.length === 0) return '<span class="text-gray-300 italic text-xs">No files</span>';
+
+            // Sort: File (with md5) first, Packaging (no md5) last
+            const sortedItems = [...items].sort((a, b) => {
+                if (a.md5_hash && !b.md5_hash) return -1;
+                if (!a.md5_hash && b.md5_hash) return 1;
+                return 0;
+            });
+
+            return sortedItems.map(item => {
+                const isPackaging = !item.md5_hash;
+                const storageLink = (!isPackaging && item.storage_name)
+                    ? `<a href="${supabaseClient.storage.from('documents').getPublicUrl(item.storage_name).data.publicUrl}" target="_blank" class="text-blue-600 hover:underline font-bold">📂 DOWNLOAD</a>`
+                    : (isPackaging || jobStatus === 'pending' ? '' : `<span class="text-gray-300">⏳ Uploading...</span>`);
+
+                const pg = item.pages || 0;
+                const modeBadge = isPackaging ? '' : (item.print_mode === 'bw'
+                    ? '<span class="bg-gray-200 text-gray-700 px-1 rounded text-[9px] font-bold">🌑 BW</span>'
+                    : '<span class="bg-purple-100 text-purple-700 px-1 rounded text-[9px] font-bold">🌈 Warna</span>');
+
+                let inkBadges = '';
+                if (!isPackaging) {
+                    if (item.print_mode === 'bw') {
+                        const c = item.ink_c || 0, m = item.ink_m || 0, y = item.ink_y || 0, k = item.ink_k || 0;
+                        const gray = (k + 0.299 * c + 0.587 * m + 0.114 * y) * 100;
+                        inkBadges = `<span class="bg-gray-100 text-gray-700 px-1 rounded">Gray: ${gray.toFixed(1)}%</span>`;
+                    } else {
+                        const c = ((item.ink_c || 0) * 100).toFixed(1);
+                        const m = ((item.ink_m || 0) * 100).toFixed(1);
+                        const y = ((item.ink_y || 0) * 100).toFixed(1);
+                        const k = ((item.ink_k || 0) * 100).toFixed(1);
+                        inkBadges = `
+                            <span class="bg-cyan-50 text-cyan-600 px-1 rounded">C:${c}%</span>
+                            <span class="bg-pink-50 text-pink-600 px-1 rounded">M:${m}%</span>
+                            <span class="bg-yellow-50 text-yellow-700 px-1 rounded">Y:${y}%</span>
+                            <span class="bg-gray-100 text-gray-700 px-1 rounded">K:${k}%</span>
+                        `;
+                    }
+                }
+
+                return `
+                    <div class="mb-3 border-b border-gray-100 pb-2 last:border-0 last:mb-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="font-bold text-gray-700 truncate mr-2 italic ${isPackaging ? 'text-blue-800' : ''}">
+                                ${isPackaging ? '📦 ' : ''}${item.file_name}
+                            </span>
+                            ${storageLink}
+                        </div>
+                        <div class="flex flex-wrap gap-1 text-[9px] mt-1 items-center">
+                            ${!isPackaging ? `<span class="bg-blue-50 text-blue-600 px-1 rounded">${pg}p</span>` : ''}
+                            ${modeBadge}
+                            ${inkBadges}
+                            <span class="ml-auto font-mono font-bold text-gray-500">Rp ${item.price.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderActionBtn(id, status) {
+            if (status === 'pending') return `<button onclick="up('${id}','paid')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-[10px] font-bold w-full transition-colors">CONFIRM PAID</button>`;
+            if (status === 'paid') return `<div class="text-[8px] text-gray-400 italic">Tunggu Upload...</div>`;
+            if (status === 'confirmed') return `<button onclick="up('${id}','ready')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-[10px] font-bold w-full transition-colors">SET READY</button>`;
+            if (status === 'ready') return `<button onclick="up('${id}','picked_up')" class="bg-black hover:bg-gray-800 text-white px-3 py-1 rounded text-[10px] font-bold w-full transition-colors">PICKED UP</button>`;
+            return '';
+        }
+
+        async function up(id, status) {
+            const job = currentJobs.find(j => j.id === id);
+            const contact = job ? job.contact : null;
+            const items = job ? (job.print_job_items || []) : [];
+
+            const { error } = await supabaseClient.from('print_jobs').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+
+            // Auto notify if becoming paid or ready
+            if (!error && (status === 'paid' || status === 'ready' || status === 'picked_up') && contact) {
+                try {
+                    const pkgItem = items.find(item => !item.md5_hash);
+                    const packagingName = pkgItem ? pkgItem.file_name : null;
+
+                    await fetch('http://localhost:5000/send-wa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: id, target: contact, status, items, packagingName })
+                    });
+                } catch (waErr) {
+                    console.error("Auto WA error:", waErr);
+                }
+            }
+            loadJobs();
+        }
+
+        async function loadSettings() {
+            const { data } = await supabaseClient.from('settings').select('*').limit(1).single();
+            if (data) {
+                document.getElementById('set-paper').value = data.paper_price || 0;
+                document.getElementById('set-black').value = data.black_ink_price || 0;
+                document.getElementById('set-color').value = data.color_ink_price || 0;
+                document.getElementById('set-cleanup').value = data.storage_limit_hours || 0;
+            }
+        }
+
+        async function saveSettings() {
+            const payload = {
+                paper_price: parseFloat(document.getElementById('set-paper').value),
+                black_ink_price: parseFloat(document.getElementById('set-black').value),
+                color_ink_price: parseFloat(document.getElementById('set-color').value),
+                storage_limit_hours: parseInt(document.getElementById('set-cleanup').value)
+            };
+            const { error } = await supabaseClient.from('settings').update(payload).eq('id', 1);
+            if (error) alert("Error: " + error.message);
+            else alert("✅ Pengaturan Berhasil Disimpan!");
+        }
+
+        // Jalankan loadJobs secara interval (untuk update data otomatis)
+        setInterval(loadJobs, 10000);
+        loadSettings();
+        loadJobs();
+    </script>
+</body>
+
+</html>

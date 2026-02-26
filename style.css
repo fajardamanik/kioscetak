@@ -1,0 +1,60 @@
+/* style.css */
+
+/* Custom Animations */
+@keyframes pulse-subtle {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(0.98);
+    }
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+/* Drop Zone Styles */
+#drop-zone {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#drop-zone.dragover {
+    border-color: #3b82f6 !important;
+    /* blue-500 */
+    background-color: #eff6ff !important;
+    /* blue-50 */
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    transform: scale(1.02);
+}
+
+/* Custom Transitions */
+.transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Clean Admin Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    /* gray-300 */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+    /* gray-400 */
+}
