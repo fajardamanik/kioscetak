@@ -4,7 +4,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- CONFIGURATION ---
 // Jika anda menggunakan GitHub Pages, ganti URL di bawah dengan URL HTTPS (misal dari ngrok)
-const EXTERNAL_BACKEND_URL = "";
+const EXTERNAL_BACKEND_URL = "https://giant-beans-stare.loca.lt";
 
 const BACKEND_URL = EXTERNAL_BACKEND_URL || (
     (window.location.hostname && !['localhost', '127.0.0.1', 'fajardamanik.github.io'].includes(window.location.hostname))
