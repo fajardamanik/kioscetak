@@ -88,6 +88,33 @@
                 : 'http://localhost:5000'
         );
 
+        // Helper untuk fetch agar tidak kena landing page localtunnel
+        async function apiFetch(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'Bypass-Tunnel-Reminder': 'true'
+            };
+            const response = await fetch(url, options);
+            const contentType = response.headers.get("content-type");
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error(`API Error (${response.status}):`, text.substring(0, 500));
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            if (contentType && contentType.includes("application/json")) {
+                return await response.json();
+            } else {
+                const text = await response.text();
+                console.error("DEBUG: Received non-JSON response:", text.substring(0, 500));
+                if (text.includes("<html") || text.includes("<body")) {
+                    alert("Sistem mendeteksi halaman 'Reminder' Localtunnel. Silakan buka URL Tunnel langsung di browser sekali saja.");
+                }
+                throw new Error("Server returned HTML instead of JSON. Check console.");
+            }
+        }
+
         let currentJobs = [];
 
         async function loadJobs() {
@@ -177,12 +204,9 @@
                 const pkgItem = job.print_job_items?.find(it => !it.md5_hash);
                 const packagingName = pkgItem ? pkgItem.file_name : null;
 
-                const response = await fetch(`${BACKEND_URL}/send-wa`, {
+                const result = await apiFetch(`${BACKEND_URL}/send-wa`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Bypass-Tunnel-Reminder': 'true'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         orderId,
                         target: job.contact,
@@ -191,7 +215,6 @@
                         packagingName
                     })
                 });
-                const result = await response.json();
                 if (result.status === "success") {
                     if (btn) {
                         btn.innerText = "✅ SENT";
@@ -317,12 +340,9 @@
                     const pkgItem = items.find(item => !item.md5_hash);
                     const packagingName = pkgItem ? pkgItem.file_name : null;
 
-                    await fetch(`${BACKEND_URL}/send-wa`, {
+                    await apiFetch(`${BACKEND_URL}/send-wa`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Bypass-Tunnel-Reminder': 'true'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ orderId: id, target: contact, status, items, packagingName })
                     });
                 } catch (waErr) {

@@ -24,7 +24,7 @@ if not all([SUPABASE_URL, SUPABASE_KEY, MIDTRANS_SERVER_KEY, FONNTE_TOKEN]):
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "Bypass-Tunnel-Reminder"]}})
 
 # ─── SHARED UTILS ────────────────────────────────────────────────────────────
 def get_midtrans_auth():

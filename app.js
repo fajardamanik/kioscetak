@@ -12,6 +12,37 @@ const BACKEND_URL = EXTERNAL_BACKEND_URL || (
         : 'http://localhost:5000'
 );
 
+console.log("DEBUG: BACKEND_URL is set to:", BACKEND_URL);
+
+// Helper untuk fetch agar tidak kena landing page localtunnel
+async function apiFetch(url, options = {}) {
+    options.headers = {
+        ...options.headers,
+        'Bypass-Tunnel-Reminder': 'true'
+    };
+    console.log(`DEBUG: Fetching ${url}`);
+    const response = await fetch(url, options);
+    const contentType = response.headers.get("content-type");
+
+    if (!response.ok) {
+        const text = await response.text();
+        console.error(`API Error (${response.status}):`, text.substring(0, 500));
+        throw new Error(`Server error: ${response.status}`);
+    }
+
+    if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+    } else {
+        const text = await response.text();
+        console.error("DEBUG: Received non-JSON response:", text.substring(0, 500));
+        // Jika isinya HTML (ada tag <html atau <body), infokan user
+        if (text.includes("<html") || text.includes("<body")) {
+            alert("Sistem mendeteksi halaman 'Reminder' Localtunnel. Silakan buka URL Tunnel langsung di browser sekali saja.");
+        }
+        throw new Error("Server returned HTML instead of JSON. Check console.");
+    }
+}
+
 let temporaryContact = "";
 let itemsRendered = false;
 let wasLocked = false;
@@ -136,12 +167,10 @@ async function handleFiles(files) {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch(`${BACKEND_URL}/analyze`, {
+            const data = await apiFetch(`${BACKEND_URL}/analyze`, {
                 method: 'POST',
-                headers: { 'Bypass-Tunnel-Reminder': 'true' },
                 body: formData
             });
-            const data = await res.json();
             if (data.status !== "success") throw new Error(data.error || "Gagal analisis");
 
             const meta = data.metadata;
@@ -505,16 +534,17 @@ async function bukaMidtrans() {
     const jobId = new URLSearchParams(window.location.search).get('jobId');
     const totalHarga = parseInt(document.getElementById('display-total-price').innerText.replace(/\D/g, ''));
 
-    const response = await fetch(`${BACKEND_URL}/create-payment`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Bypass-Tunnel-Reminder': 'true'
-        },
-        body: JSON.stringify({ jobId, amount: totalHarga, customer_contact: temporaryContact })
-    });
-    const data = await response.json();
-    if (data.redirect_url) window.open(data.redirect_url, '_blank');
+    try {
+        const data = await apiFetch(`${BACKEND_URL}/create-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobId, amount: totalHarga, customer_contact: temporaryContact })
+        });
+        if (data.redirect_url) window.open(data.redirect_url, '_blank');
+    } catch (e) {
+        console.error("Payment failed:", e);
+        alert("Gagal membuat pembayaran: " + e.message);
+    }
 }
 
 // ─── RESET PAGE ─────────────────────────────────────────────────────────────
