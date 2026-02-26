@@ -24,9 +24,17 @@ if not all([SUPABASE_URL, SUPABASE_KEY, MIDTRANS_SERVER_KEY, FONNTE_TOKEN]):
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "allow_headers": ["Content-Type", "Bypass-Tunnel-Reminder"]}})
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "allow_headers": ["Content-Type", "Bypass-Tunnel-Reminder", "Origin", "Accept"],
+    "methods": ["GET", "POST", "OPTIONS"]
+}})
 
 # ─── SHARED UTILS ────────────────────────────────────────────────────────────
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok", "worker": "running"}), 200
+
 def get_midtrans_auth():
     encoded = base64.b64encode(f"{MIDTRANS_SERVER_KEY}:".encode()).decode()
     return {"Authorization": f"Basic {encoded}", "Accept": "application/json"}
@@ -212,4 +220,4 @@ if __name__ == '__main__':
     
     # Start Flask API
     print("🚀 worker.py is running (API + Watcher + Processor)")
-    app.run(port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
