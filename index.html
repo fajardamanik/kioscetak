@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KioskPrint - Cetak Cepat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div id="app" class="max-w-2xl mx-auto p-6">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-blue-600">🖨️ KioskPrint</h1>
+            <p class="text-gray-500">Cetak PDF instan tanpa antre</p>
+        </header>
+
+        <div id="upload-section" class="space-y-4">
+            <div id="drop-zone"
+                class="border-4 border-dashed border-blue-200 rounded-xl p-10 text-center cursor-pointer hover:bg-blue-50 transition-all">
+                <input type="file" id="file-input" class="hidden" accept=".pdf" multiple>
+                <div class="text-4xl mb-3">📄</div>
+                <p class="text-lg text-gray-600">Tarik file PDF ke sini atau <span class="text-blue-600 font-bold">Klik
+                        untuk pilih</span></p>
+                <p class="text-xs text-gray-400 mt-2">Format: PDF · Bisa pilih banyak file</p>
+            </div>
+
+            <!-- Progress Bar Upload -->
+            <div id="progress-wrapper" class="hidden bg-white rounded-xl p-4 shadow border border-gray-100">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Upload Progress</span>
+                    <span id="progress-text" class="text-xs text-gray-500">Memulai...</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-300 ease-out"
+                        style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="status-section" class="hidden bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Detail Pesanan</h2>
+                    <p id="display-jobid" class="text-[10px] font-mono text-gray-400"></p>
+                </div>
+                <div id="status-tag"
+                    class="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 uppercase animate-pulse">
+                    MENGANALISIS...
+                </div>
+            </div>
+
+            <table class="w-full text-sm text-left mb-6">
+                <thead class="text-gray-400 uppercase text-[10px] border-b">
+                    <tr>
+                        <th class="py-2">Nama File</th>
+                        <th class="py-2 text-center">Mode</th>
+                        <th class="py-2 text-right">Harga</th>
+                    </tr>
+                </thead>
+                <tbody id="file-list-body">
+                </tbody>
+                <tfoot class="border-t-2">
+                    <tr class="font-bold text-lg text-blue-600">
+                        <td colspan="2" class="py-4 text-gray-800">TOTAL ESTIMASI</td>
+                        <td class="py-4 text-right" id="display-total-price">Rp 0</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div id="calc-container" class="hidden mt-6 text-center border-t pt-4">
+                <button onclick="hitungBiaya()"
+                    class="w-full bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 shadow-lg transition-all active:scale-95">
+                    🧮 KONFIRMASI & HITUNG BIAYA
+                </button>
+            </div>
+
+            <div id="contact-container" class="hidden mt-6 space-y-4">
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <label class="block text-xs font-black text-gray-500 mb-2 uppercase">Nomor WhatsApp
+                        Notifikasi</label>
+                    <input type="text" id="contact-input" placeholder="0812..."
+                        class="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                </div>
+                <div id="midtrans-container" class="hidden">
+                    <button onclick="bukaMidtrans()"
+                        class="w-full bg-[#132144] text-white py-4 rounded-xl font-bold shadow-xl">🚀 BAYAR
+                        SEKARANG</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
